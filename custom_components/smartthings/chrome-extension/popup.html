@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartThings OAuth Helper</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          sans-serif;
+        width: 320px;
+        padding: 16px;
+        margin: 0;
+      }
+
+      h1 {
+        font-size: 16px;
+        color: #1428a0;
+        margin: 0 0 12px 0;
+      }
+
+      p {
+        font-size: 13px;
+        color: #666;
+        margin: 0 0 12px 0;
+        line-height: 1.5;
+      }
+
+      label {
+        display: block;
+        font-size: 12px;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 4px;
+      }
+
+      input[type="text"] {
+        width: 100%;
+        padding: 8px 10px;
+        font-size: 13px;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        box-sizing: border-box;
+      }
+
+      .hint {
+        font-size: 11px;
+        color: #999;
+        margin: 6px 0 12px;
+      }
+
+      .btn {
+        display: block;
+        width: 100%;
+        padding: 8px 12px;
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        font-size: 13px;
+        cursor: pointer;
+        box-sizing: border-box;
+      }
+
+      .btn-save {
+        background: #1428a0;
+      }
+      .btn-save:hover {
+        background: #0f1f80;
+      }
+      .btn-clear {
+        background: #c0392b;
+        margin-top: 8px;
+      }
+      .btn-clear:hover {
+        background: #a93226;
+      }
+
+      .status {
+        background: #e8f5e9;
+        border-radius: 6px;
+        padding: 10px 12px;
+        font-size: 12px;
+        color: #2e7d32;
+        margin-bottom: 12px;
+      }
+
+      #save-status {
+        margin-top: 8px;
+        font-size: 12px;
+        min-height: 16px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SmartThings OAuth Helper</h1>
+    <p>
+      Captures the Samsung account <code>sasdk://</code> redirect and shows the
+      full callback URL to copy (default), or auto-forwards it to Home Assistant
+      if you set a target below.
+    </p>
+
+    <div class="status" id="capture-status">✓ Extension active and ready</div>
+
+    <label for="ha-target">Home Assistant redirect URL (optional)</label>
+    <input
+      type="text"
+      id="ha-target"
+      placeholder="https://your-ha-host/api/smartthings/oauth-callback"
+    />
+    <div class="hint">
+      Leave blank to always show the copy/paste capture page. Only set this once
+      your integration's custom redirect view exists.
+    </div>
+
+    <button class="btn btn-save" id="save-target">Save target</button>
+    <button class="btn btn-clear" id="clear-target">Clear target</button>
+    <div id="save-status"></div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
