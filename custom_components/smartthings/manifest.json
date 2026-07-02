@@ -1,9 +1,9 @@
 {
   "domain": "smartthings",
   "name": "SmartThings",
-  "codeowners": ["@joostlek"],
+  "codeowners": ["@crash0verride11"],
   "config_flow": true,
-  "dependencies": ["application_credentials"],
+  "dependencies": [],
   "dhcp": [
     {
       "hostname": "st*",
@@ -35,8 +35,9 @@
   ],
   "documentation": "https://www.home-assistant.io/integrations/smartthings",
   "integration_type": "hub",
-  "iot_class": "cloud_push",
+  "iot_class": "cloud_polling",
   "loggers": ["pysmartthings"],
   "quality_scale": "bronze",
-  "requirements": ["pysmartthings==4.0.1"]
+  "requirements": ["pysmartthings==4.0.1"],
+  "version": "2026.7.1"
 }
