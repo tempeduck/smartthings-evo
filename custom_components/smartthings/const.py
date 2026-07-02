@@ -37,6 +37,11 @@ CONF_REFRESH_TOKEN = "refresh_token"
 MAIN = "main"
 OLD_DATA = "old_data"
 
+# REST polling (the Samsung-account/OSP token has no sse/installed_app_id for realtime push).
+DEFAULT_SCAN_INTERVAL = 30
+# Dispatcher signal fired by the coordinator after each poll, formatted with the device id.
+SIGNAL_SMARTTHINGS_UPDATE = "smartthings_update_{}"
+
 CONF_SUBSCRIPTION_ID = "subscription_id"
 EVENT_BUTTON = "smartthings.button"
 

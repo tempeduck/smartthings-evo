@@ -13,11 +13,13 @@ from pysmartthings import (
 )
 from pysmartthings.models import HealthStatus
 
+from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity import Entity
 
 from . import FullDevice
-from .const import DOMAIN, MAIN
+from .const import DOMAIN, MAIN, SIGNAL_SMARTTHINGS_UPDATE
 
 
 class SmartThingsEntity(Entity):
@@ -52,29 +54,37 @@ class SmartThingsEntity(Entity):
 
     @override
     async def async_added_to_hass(self) -> None:
-        """Subscribe to updates."""
+        """Subscribe to REST-polling updates for this device."""
         await super().async_added_to_hass()
-        for capability in self._internal_state:
-            self.async_on_remove(
-                self.client.add_device_capability_event_listener(
-                    self.device.device.device_id,
-                    self.component,
-                    capability,
-                    self._update_handler,
-                )
-            )
         self.async_on_remove(
-            self.client.add_device_availability_event_listener(
-                self.device.device.device_id, self._availability_handler
+            async_dispatcher_connect(
+                self.hass,
+                SIGNAL_SMARTTHINGS_UPDATE.format(self.device.device.device_id),
+                self._handle_coordinator_update,
             )
         )
         self._update_attr()
 
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Handle a fresh poll: rebuild internal state from the (in-place) updated device."""
+        self._internal_state = {
+            capability: self.device.status[self.component][capability]
+            for capability in self.capabilities
+            if capability in self.device.status[self.component]
+        }
+        self._attr_available = self.device.online
+        self._update_attr()
+        self.async_write_ha_state()
+
     def _availability_handler(self, event: DeviceHealthEvent) -> None:
+        # Retained for the (currently unused) websocket path; not called under REST polling.
         self._attr_available = event.status != HealthStatus.OFFLINE
         self.async_write_ha_state()
 
     def _update_handler(self, event: DeviceEvent) -> None:
+        # Retained so subclass overrides (event.py, light.py) keep a valid super() call. Not
+        # invoked under REST polling (momentary events like button presses aren't pollable).
         self._internal_state[event.capability][event.attribute].value = event.value
         self._internal_state[event.capability][event.attribute].data = event.data
         self._handle_update()
