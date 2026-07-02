@@ -50,8 +50,13 @@ DEVICE_CLASS_MAP: dict[Category | str, MediaPlayerDeviceClass] = {
     Category.SPEAKER: MediaPlayerDeviceClass.SPEAKER,
     Category.TELEVISION: MediaPlayerDeviceClass.TV,
     Category.RECEIVER: MediaPlayerDeviceClass.RECEIVER,
-    Category.PROJECTOR: MediaPlayerDeviceClass.PROJECTOR,
 }
+# MediaPlayerDeviceClass.PROJECTOR (and the matching pysmartthings Category) were added in a
+# newer HA/pysmartthings; add the mapping only if both exist so older cores can still import.
+if (_projector_dc := getattr(MediaPlayerDeviceClass, "PROJECTOR", None)) is not None and (
+    _projector_cat := getattr(Category, "PROJECTOR", None)
+) is not None:
+    DEVICE_CLASS_MAP[_projector_cat] = _projector_dc
 
 VALUE_TO_STATE = {
     "buffering": MediaPlayerState.BUFFERING,
