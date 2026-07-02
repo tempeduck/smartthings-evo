@@ -5,7 +5,7 @@ import contextlib
 from copy import deepcopy
 from dataclasses import dataclass
 import logging
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 from pysmartthings import (
     Attribute,
@@ -20,7 +20,6 @@ from pysmartthings import (
     SmartThingsAuthenticationFailedError,
     SmartThingsConnectionError,
     SmartThingsError,
-    SmartThingsSinkError,
     Status,
 )
 from pysmartthings.models import HealthStatus
@@ -38,24 +37,19 @@ from homeassistant.const import (
     ATTR_VIA_DEVICE,
     CONF_ACCESS_TOKEN,
     CONF_TOKEN,
-    EVENT_HOMEASSISTANT_STOP,
     Platform,
 )
-from homeassistant.core import Event, HomeAssistant
+from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import (
     ConfigEntryAuthFailed,
     ConfigEntryNotReady,
-    OAuth2TokenRequestError,
-    OAuth2TokenRequestReauthError,
 )
 from homeassistant.helpers import device_registry as dr, entity_registry as er
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from homeassistant.helpers.config_entry_oauth2_flow import (
-    ImplementationUnavailableError,
-    OAuth2Session,
-    async_get_config_entry_implementation,
-)
 from homeassistant.helpers.entity_registry import RegistryEntry, async_migrate_entries
+
+from .coordinator import SmartThingsCoordinator
+from .samsung_auth import SamsungAuthError, SamsungTokenManager
 
 from .const import (
     BINARY_SENSOR_ATTRIBUTES_TO_CAPABILITIES,
@@ -85,6 +79,7 @@ class SmartThingsData:
     scenes: dict[str, Scene]
     rooms: dict[str, str]
     client: SmartThings
+    coordinator: SmartThingsCoordinator
 
 
 @dataclass
@@ -123,36 +118,30 @@ PLATFORMS = [
 
 async def async_setup_entry(hass: HomeAssistant, entry: SmartThingsConfigEntry) -> bool:
     """Initialize config entry which represents an installed SmartApp."""
-    # The oauth smartthings entry will have a token, older ones are version 3
-    # after migration but still require reauthentication
+    # Samsung-account (OSP) token entry: refreshes non-interactively via SamsungTokenManager.
     if CONF_TOKEN not in entry.data:
         raise ConfigEntryAuthFailed("Config entry missing token")
-    try:
-        implementation = await async_get_config_entry_implementation(hass, entry)
-    except ImplementationUnavailableError as err:
-        raise ConfigEntryNotReady(
-            translation_domain=DOMAIN,
-            translation_key="oauth2_implementation_unavailable",
-        ) from err
-    session = OAuth2Session(hass, entry, implementation)
+
+    async def _persist_token(token: dict) -> None:
+        """Persist a refreshed token back to the config entry."""
+        hass.config_entries.async_update_entry(
+            entry, data={**entry.data, CONF_TOKEN: token}
+        )
+
+    token_manager = SamsungTokenManager(
+        async_get_clientsession(hass), dict(entry.data[CONF_TOKEN]), _persist_token
+    )
 
     try:
-        await session.async_ensure_token_valid()
-    except OAuth2TokenRequestReauthError as err:
+        await token_manager.async_ensure_valid_token()
+    except SamsungAuthError as err:
+        # A refused refresh (expired/revoked refresh_token) means we need the user again.
         raise ConfigEntryAuthFailed from err
-    except OAuth2TokenRequestError as err:
+    except (SmartThingsConnectionError, TimeoutError) as err:
         raise ConfigEntryNotReady from err
 
     client = SmartThings(session=async_get_clientsession(hass))
-
-    async def _refresh_token() -> str:
-        await session.async_ensure_token_valid()
-        token = session.token[CONF_ACCESS_TOKEN]
-        if TYPE_CHECKING:
-            assert isinstance(token, str)
-        return token
-
-    client.refresh_token_function = _refresh_token
+    client.refresh_token_function = token_manager.async_ensure_valid_token
 
     def _handle_max_connections() -> None:
         _LOGGER.debug(
@@ -179,34 +168,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartThingsConfigEntry) 
 
     client.new_subscription_id_callback = _handle_new_subscription_identifier
 
-    if (old_identifier := entry.data.get(CONF_SUBSCRIPTION_ID)) is not None:
-        _LOGGER.debug("Trying to delete old subscription %s", old_identifier)
-        try:
-            await client.delete_subscription(old_identifier)
-        except SmartThingsConnectionError as err:
-            raise ConfigEntryNotReady("Could not delete old subscription") from err
-
-    _LOGGER.debug("Trying to create a new subscription")
-    try:
-        subscription = await client.create_subscription(
-            entry.data[CONF_LOCATION_ID],
-            entry.data[CONF_TOKEN][CONF_INSTALLED_APP_ID],
-        )
-    except SmartThingsSinkError as err:
-        _LOGGER.exception("Couldn't create a new subscription")
-        raise ConfigEntryNotReady from err
-    subscription_id = subscription.subscription_id
-    _handle_new_subscription_identifier(subscription_id)
-
-    entry.async_create_background_task(
-        hass,
-        client.subscribe(
-            entry.data[CONF_LOCATION_ID],
-            entry.data[CONF_TOKEN][CONF_INSTALLED_APP_ID],
-            subscription,
-        ),
-        "smartthings_socket",
-    )
+    # The Samsung-account (OSP) token has no installed_app_id / sse scope, so realtime push
+    # (websocket subscription) isn't available. We poll device status over REST instead — the
+    # SmartThingsCoordinator, created below once devices are discovered.
 
     device_status: dict[str, FullDevice] = {}
     try:
@@ -258,18 +222,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartThingsConfigEntry) 
         )
     )
 
+    devices = {
+        device_id: device
+        for device_id, device in device_status.items()
+        if MAIN in device.status
+    }
+    coordinator = SmartThingsCoordinator(hass, entry, client, devices, process_status)
     entry.runtime_data = SmartThingsData(
-        devices={
-            device_id: device
-            for device_id, device in device_status.items()
-            if MAIN in device.status
-        },
+        devices=devices,
         client=client,
         scenes=scenes,
         rooms=rooms,
+        coordinator=coordinator,
     )
 
-    # Events are deprecated and will be removed in 2025.10
+    # Start periodic REST polling. Adding a no-op listener starts DataUpdateCoordinator's
+    # scheduling without an immediate refetch (we already have fresh status from setup).
+    entry.async_on_unload(coordinator.async_add_listener(lambda: None))
+
+    # Button-press events were push-only (websocket) and are not pollable; the listener is
+    # retained but never fires under REST polling. Events were already slated for removal.
     def handle_button_press(event: DeviceEvent) -> None:
         """Handle a button press."""
         if (
@@ -290,14 +262,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartThingsConfigEntry) 
 
     entry.async_on_unload(
         client.add_unspecified_device_event_listener(handle_button_press)
-    )
-
-    async def _handle_shutdown(_: Event) -> None:
-        """Handle shutdown."""
-        await client.delete_subscription(subscription_id)
-
-    entry.async_on_unload(
-        hass.bus.async_listen_once(EVENT_HOMEASSISTANT_STOP, _handle_shutdown)
     )
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
