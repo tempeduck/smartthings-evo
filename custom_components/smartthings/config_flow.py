@@ -71,7 +71,7 @@ class SmartThingsConfigFlow(ConfigFlow, domain=DOMAIN):
     ) -> ConfigFlowResult:
         """Automatic path: drive the browser (via the capture extension) through login.
 
-        First entry emits the ``ha-sasdk.invalid`` sentinel carrying ``state_HA`` (HA's
+        First entry emits the ``ha-sasdk.example.com`` sentinel carrying ``state_HA`` (HA's
         routing JWT) and the Samsung ``signin_url``; the extension opens the login and, on
         the ``sasdk://`` callback, routes back through ``my.home-assistant.io`` to HA's OAuth
         callback view — which resumes this same step with ``{code, state}``.

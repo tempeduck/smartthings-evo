@@ -1,2 +1,5 @@
 .DS_Store
 /resources
+*__pycache__
+/poc
+CLAUDE.md

@@ -2,14 +2,14 @@
 SmartThings is 'evolving' their developer API by charging for access starting in October. smartthings-evo is a copy of the ha-core smartthings component, refactored to mirror the authentication flow of the android mobile app, requiring a browser extension to capture the sasdk:// redirect uri and finish authorization.
 
 ## Push vs Polling
-The REST auth is not capable of subscribing to push updates and the integration now polls the REST api every 30s.
+This login method can't subscribe to push updates, so the integration now polls the REST api every 30s.
 
 # Authentication
 
 > [!IMPORTANT]
-> A browser extension is required to successfully authenticate with SmartThings (capture the sasdk:// uri). Do not skip this step!
+> A browser extension is required to successfully authenticate with SmartThings (capture the sasdk:// URI). Do not skip this step!
 
-SmartThings mobile uses a custom PKCE OAuth authentication which blocks automated logins. Authentication requires a browser-based OAuth flow using a browser extension to capture the mobile app redirect URI.
+SmartThings mobile uses a Samsung account login flow that blocks automated logins. Authentication requires a browser-based OAuth flow using a browser extension to capture the mobile app redirect URI.
 
 ## Setup
 
@@ -20,8 +20,8 @@ SmartThings mobile uses a custom PKCE OAuth authentication which blocks automate
    - Open Google Chrome and navigate to `chrome://extensions/` or Edge `edge://extensions/`
    - Enable "Developer mode"
    - Click "Load unpacked" and select the extracted `chrome-extension` folder
-   - Start the the automated authentication flow in HA by the integration
-       - If already logged-in to samsung the callback can not be captured, open the extension pop-up, reset samsung auth, return to HA, click `open website` to continue auth
+   - Start the automated authentication flow in HA by the integration
+       - If your browser still has a Samsung login cookie, the login is skipped and no redirect URI is produced to capture — open the extension pop-up, reset Samsung auth to delete existing cookies, return to HA, and click `open website` to continue authentication
    - After logging in to Samsung the redirect should be captured and re-written to my-homeassistant.io
    - Proceed with the `Link to Home Assistant` process
 
