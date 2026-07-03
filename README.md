@@ -28,5 +28,5 @@ SmartThings mobile uses a Samsung account login flow that blocks automated login
    ### Known Issue
    - A tab loads a 500 internal server error but authentication proceeds in HA
 
-#### original codeowner
-thanks to joostlek for handling the integration thus far
+# Original codeowner
+Thanks to joostlek for handling the integration thus far
