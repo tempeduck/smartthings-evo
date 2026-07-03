@@ -436,6 +436,28 @@ async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             minor_version=3,
         )
 
+    if entry.minor_version < 4:
+        # We swapped the developer-OAuth (application_credentials) client for the
+        # Samsung-account (OSP) sign-in used by the SmartThings app. The two token
+        # shapes aren't compatible, so drop the old token to force reauthentication;
+        # async_setup_entry raises ConfigEntryAuthFailed when CONF_TOKEN is missing,
+        # which HA turns into a reauth flow automatically.
+        data = dict(entry.data)
+        token = data.get(CONF_TOKEN)
+        if token is not None and "osp_host" not in token:
+            _LOGGER.warning(
+                "SmartThings authentication method has changed to Samsung-account "
+                "sign-in; entry %s needs to be reauthenticated",
+                entry.entry_id,
+            )
+            data.pop(CONF_TOKEN, None)
+            data.pop("auth_implementation", None)
+        hass.config_entries.async_update_entry(
+            entry,
+            data=data,
+            minor_version=4,
+        )
+
     return True
 
 

@@ -39,7 +39,7 @@ class SmartThingsConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle configuration of SmartThings via Samsung-account login."""
 
     VERSION = 3
-    MINOR_VERSION = 3
+    MINOR_VERSION = 4
 
     def __init__(self) -> None:
         """Initialise the flow."""
