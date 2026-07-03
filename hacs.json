@@ -1,6 +1,6 @@
 {
   "name": "smartthings-evo",
   "render_readme": true,
-  "country": "US",
+  "country": ["US"],
   "homeassistant": "2026.6.0"
 }
