@@ -42,3 +42,36 @@ document.getElementById("clear-target").addEventListener("click", () => {
     saveStatus.textContent = "Cleared. Callbacks will show the capture page.";
   });
 });
+
+// Mirrors the Mazda OAuth Helper's "Clear cookies" button (fano0001/home-assistant-mazda),
+// scoped to account.samsung.com: clears a stale session so the next login is fresh
+// (status=new) instead of reused (status=change, which returns a code not bound to our PKCE).
+const SAMSUNG_COOKIE_DOMAIN = "account.samsung.com";
+
+document.getElementById("reset-auth").addEventListener("click", () => {
+  const statusEl = document.getElementById("reset-status");
+  statusEl.textContent = "Clearing…";
+
+  chrome.cookies.getAll({ domain: SAMSUNG_COOKIE_DOMAIN }, (cookies) => {
+    if (!cookies.length) {
+      statusEl.textContent = "No Samsung cookies found.";
+      return;
+    }
+
+    let removed = 0;
+    cookies.forEach((cookie) => {
+      const url =
+        "http" +
+        (cookie.secure ? "s" : "") +
+        "://" +
+        cookie.domain.replace(/^\./, "") +
+        cookie.path;
+      chrome.cookies.remove({ url, name: cookie.name }, () => {
+        removed++;
+        if (removed === cookies.length) {
+          statusEl.textContent = `Cleared ${removed} cookie${removed !== 1 ? "s" : ""}. Ready for a fresh Samsung login.`;
+        }
+      });
+    });
+  });
+});

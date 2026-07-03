@@ -87,7 +87,7 @@ return to the copy/paste page.
 
 ## Files
 
-- `manifest.json` — MV3 config (`webNavigation`, `tabs`, `storage`; hosts
+- `manifest.json` — MV3 config (`webNavigation`, `tabs`, `storage`, `cookies`; hosts
   `https://account.samsung.com/*` and `https://ha-sasdk.example.com/*` for the sentinel).
 - `background.js` — service worker. `handleSentinel` intercepts the outbound
   `https://ha-sasdk.example.com/…` handoff (stores `pendingFlow`, opens the login);
@@ -98,7 +98,8 @@ return to the copy/paste page.
   masked code + debug param table, with Copy buttons. Data comes from
   `chrome.storage` (`lastCallback`), not the page URL.
 - `popup.html` / `popup.js` — configure/clear the optional HA target; shows last
-  capture.
+  capture; **Reset Samsung Auth** clears `account.samsung.com` cookies (mirrors
+  the Mazda extension's "Clear cookies" button, scoped to Samsung).
 - `icon16/48/128.svg` — toolbar icons.
 
 ## Troubleshooting
@@ -119,4 +120,6 @@ return to the copy/paste page.
 - **`invalid_grant` / expired code:** codes expire in ~300s and are single-use.
   Re-run, sign out first, and paste promptly.
 - **Wrong `status`:** if you see `status=change`, you reused a session — sign
-  out of Samsung and retry for `status=new`.
+  out of Samsung and retry for `status=new`. Use the popup's **Reset Samsung
+  Auth** button to clear `account.samsung.com` cookies without a manual
+  sign-out.
