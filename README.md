@@ -20,7 +20,8 @@ SmartThings mobile uses a custom PKCE OAuth authentication which blocks automate
    - Open Google Chrome and navigate to `chrome://extensions/` or Edge `edge://extensions/`
    - Enable "Developer mode"
    - Click "Load unpacked" and select the extracted `chrome-extension` folder
-   - Start the the automated authentication flow in the integration
+   - Start the the automated authentication flow in HA by the integration
+       - If already logged-in to samsung the callback can not be captured, open the extension pop-up, reset samsung auth, return to HA, click `open website` to continue auth
    - After logging in to Samsung the redirect should be captured and re-written to my-homeassistant.io
    - Proceed with the `Link to Home Assistant` process
 
