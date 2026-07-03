@@ -33,8 +33,9 @@
       "hostname": "samsung-*"
     }
   ],
-  "documentation": "https://www.home-assistant.io/integrations/smartthings",
+  "documentation": "https://github.com/crash0verride11/smartthings-evo",
   "integration_type": "hub",
+  "issue_tracker": "https://github.com/crash0verride11/smartthings-evo/issues",
   "iot_class": "cloud_polling",
   "loggers": ["pysmartthings"],
   "quality_scale": "bronze",
