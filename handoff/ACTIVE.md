@@ -2,6 +2,8 @@
 
 The full readiness assessment and test roadmap is in
 `handoff/READINESS_ROADMAP.md`.
+The reviewed live-system preflight and rollback plan is in
+`handoff/LIVE_INSTALL_PLAN.md`.
 
 ## Current state
 
@@ -46,10 +48,11 @@ The full readiness assessment and test roadmap is in
 
 1. Add deeper setup-entry and platform-specific entity tests as defects or
    compatibility work identify high-value cases.
-2. Confirm Robert's Home Assistant version meets the declared `2026.6.0`
-   minimum.
-3. Review safe installation steps before touching the live Home Assistant
-   instance.
+2. Obtain approval for Phase A of `handoff/LIVE_INSTALL_PLAN.md`, then confirm
+   Robert's Home Assistant version meets the declared `2026.6.0` minimum and
+   identify the installation/backup mechanisms.
+3. Resolve the exact installation and rollback actions before touching the
+   live Home Assistant instance.
 4. Load the unpacked extension and test manual authentication first.
 5. Exercise automatic authentication and capture sanitized failure details if
    the known callback-tab HTTP 500 appears.
