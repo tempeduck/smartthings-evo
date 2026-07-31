@@ -52,6 +52,15 @@ The reviewed live-system preflight and rollback plan is in
   `smartthings` integration without import, manifest, or dependency errors.
   The only integration-related log message was Home Assistant's standard
   warning that a custom integration is not tested by Home Assistant.
+- Disposable-runtime config-flow validation passed: after isolated onboarding,
+  Home Assistant Core `2026.7.4` exposed the custom integration through its real
+  config-flow API and returned the expected `pick_method` menu with automatic
+  and manual Samsung authentication choices.
+- Disposable-runtime migration validation passed using synthetic data: a
+  SmartThings version-3/minor-3 entry was migrated to minor version 4, its
+  synthetic incompatible legacy token was removed, and Home Assistant moved
+  the entry to an authentication-required setup error. No production entry or
+  token was copied.
 - Phase A live-system discovery was completed read-only on 2026-07-30:
   Home Assistant OS is running Core `2026.7.4`, HACS is loaded, and a protected
   automatic backup includes Home Assistant configuration.
@@ -64,8 +73,9 @@ The reviewed live-system preflight and rollback plan is in
 
 1. Add deeper setup-entry and platform-specific entity tests as defects or
    compatibility work identify high-value cases.
-2. Use the disposable Home Assistant instance for config-flow and migration
-   testing that does not require production data or credentials.
+2. Continue disposable-instance testing with the browser-extension and manual
+   Samsung authentication only after reviewing how the browser will safely
+   reach the localhost-bound instance.
 3. Complete the read-only Phase B/C inspection in
    `handoff/LIVE_INSTALL_PLAN.md` to resolve the custom-component/HACS state and
    exact restore procedure.
