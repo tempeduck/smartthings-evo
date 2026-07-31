@@ -12,9 +12,10 @@ The full readiness assessment and test roadmap is in
 - Local `main` matches upstream commit `16548af` before workspace scaffolding.
 - Added workspace guidance and project context; nothing has been committed or
   pushed.
-- Began the non-live automated test foundation. The local workspace now has
-  isolated pytest coverage for Samsung authentication/token management and the
-  REST polling coordinator, plus a proposed GitHub Actions test workflow.
+- Completed the initial non-live automated test foundation. The repository now
+  has isolated pytest coverage for Samsung authentication/token management,
+  configuration-flow state transitions, REST polling, and base entity update
+  and command behavior, plus a GitHub Actions test workflow.
 - Callback validation now rejects missing or mismatched Samsung callback state,
   and token refreshes are serialized to prevent duplicate concurrent refresh
   requests.
@@ -35,7 +36,7 @@ The full readiness assessment and test roadmap is in
 - Static review of `pysmartthings==4.0.1` confirmed its
   `refresh_token_function` callback is invoked before API requests and accepts
   the access-token string returned by `SamsungTokenManager`.
-- The new isolated unit suite passes: 19 tests.
+- The isolated unit suite passes: 32 tests.
 - The HACS GitHub Action has not been run against the unpushed local
   scaffolding.
 - No Home Assistant installation, Samsung login, browser-extension load, or
@@ -43,7 +44,8 @@ The full readiness assessment and test roadmap is in
 
 ## Open work
 
-1. Extend automated coverage to config-flow and entity update behavior.
+1. Add deeper setup-entry and platform-specific entity tests as defects or
+   compatibility work identify high-value cases.
 2. Confirm Robert's Home Assistant version meets the declared `2026.6.0`
    minimum.
 3. Review safe installation steps before touching the live Home Assistant
