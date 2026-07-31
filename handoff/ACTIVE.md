@@ -42,7 +42,16 @@ The reviewed live-system preflight and rollback plan is in
 - The HACS GitHub Action has not been run against the unpushed local
   scaffolding.
 - No Home Assistant installation, Samsung login, browser-extension load, or
-  live API test has been performed.
+  live Samsung API test has been performed.
+- A disposable Home Assistant Core `2026.7.4` container is running on the
+  development VM as `smartthings-evo-ha-20260730`, bound only to
+  `127.0.0.1:18123`. Its isolated configuration is under
+  `/tmp/smartthings-evo-ha-20260730/config`; it contains a copy of the current
+  custom integration and no production config, tokens, entries, or devices.
+- The disposable instance reached onboarding and recognized the custom
+  `smartthings` integration without import, manifest, or dependency errors.
+  The only integration-related log message was Home Assistant's standard
+  warning that a custom integration is not tested by Home Assistant.
 - Phase A live-system discovery was completed read-only on 2026-07-30:
   Home Assistant OS is running Core `2026.7.4`, HACS is loaded, and a protected
   automatic backup includes Home Assistant configuration.
@@ -55,13 +64,15 @@ The reviewed live-system preflight and rollback plan is in
 
 1. Add deeper setup-entry and platform-specific entity tests as defects or
    compatibility work identify high-value cases.
-2. Complete the read-only Phase B/C inspection in
+2. Use the disposable Home Assistant instance for config-flow and migration
+   testing that does not require production data or credentials.
+3. Complete the read-only Phase B/C inspection in
    `handoff/LIVE_INSTALL_PLAN.md` to resolve the custom-component/HACS state and
    exact restore procedure.
-3. Review and approve backup creation and the exact installation/migration
+4. Review and approve backup creation and the exact installation/migration
    actions before changing the live Home Assistant instance.
-4. Load the unpacked extension and test manual authentication first.
-5. Exercise automatic authentication and capture sanitized failure details if
+5. Load the unpacked extension and test manual authentication first.
+6. Exercise automatic authentication and capture sanitized failure details if
    the known callback-tab HTTP 500 appears.
 
 ## Risks
@@ -78,3 +89,6 @@ The reviewed live-system preflight and rollback plan is in
 - Installation will migrate the existing same-domain built-in SmartThings entry
   and force reauthentication; it is not an independent coexistence test.
 - Live installation and authentication have not yet been validated.
+- The disposable container is temporary and bound to localhost. Remove the
+  `smartthings-evo-ha-20260730` container and its explicit `/tmp` directory when
+  testing is complete.
