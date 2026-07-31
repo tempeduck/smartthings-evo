@@ -43,16 +43,23 @@ The reviewed live-system preflight and rollback plan is in
   scaffolding.
 - No Home Assistant installation, Samsung login, browser-extension load, or
   live API test has been performed.
+- Phase A live-system discovery was completed read-only on 2026-07-30:
+  Home Assistant OS is running Core `2026.7.4`, HACS is loaded, and a protected
+  automatic backup includes Home Assistant configuration.
+- One enabled built-in SmartThings entry (`Home`, source DHCP) exists at version
+  3/minor version 3. Installing this same-domain custom integration will replace
+  the code loading that entry; its minor-version-4 migration deliberately drops
+  the incompatible old token and forces Samsung-account reauthentication.
 
 ## Open work
 
 1. Add deeper setup-entry and platform-specific entity tests as defects or
    compatibility work identify high-value cases.
-2. Obtain approval for Phase A of `handoff/LIVE_INSTALL_PLAN.md`, then confirm
-   Robert's Home Assistant version meets the declared `2026.6.0` minimum and
-   identify the installation/backup mechanisms.
-3. Resolve the exact installation and rollback actions before touching the
-   live Home Assistant instance.
+2. Complete the read-only Phase B/C inspection in
+   `handoff/LIVE_INSTALL_PLAN.md` to resolve the custom-component/HACS state and
+   exact restore procedure.
+3. Review and approve backup creation and the exact installation/migration
+   actions before changing the live Home Assistant instance.
 4. Load the unpacked extension and test manual authentication first.
 5. Exercise automatic authentication and capture sanitized failure details if
    the known callback-tab HTTP 500 appears.
@@ -68,4 +75,6 @@ The reviewed live-system preflight and rollback plan is in
   operational readiness remains unverified until authentication, initial
   discovery, commands, polling, token refresh, reload, and restart persistence
   are exercised in Home Assistant.
+- Installation will migrate the existing same-domain built-in SmartThings entry
+  and force reauthentication; it is not an independent coexistence test.
 - Live installation and authentication have not yet been validated.

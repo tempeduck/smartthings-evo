@@ -3,6 +3,34 @@
 Date prepared: 2026-07-30
 Status: Prepared only; no live-system action has been taken.
 
+## Phase A findings
+
+Read-only discovery completed on 2026-07-30:
+
+- Installation type: Home Assistant OS
+- Machine type: `qemux86-64`
+- Home Assistant Core: `2026.7.4`
+- Required minimum: `2026.6.0`
+- Core state: running, not in safe mode
+- HACS: loaded with one enabled config entry
+- Existing SmartThings integration: loaded
+- Existing SmartThings config entries: one enabled entry titled `Home`
+- Existing entry source: DHCP
+- Existing entry version: 3, minor version 3
+- Available backup: protected and compressed automatic partial backup created
+  on 2026-07-30; its content includes Home Assistant configuration
+
+Phase A result: version and backup prerequisites pass, but installation is
+currently a **no-go without an explicit migration/rollback review**.
+
+The custom integration uses the same `smartthings` domain as Home Assistant's
+built-in integration. After installation and restart, it will replace the code
+used to load the existing entry rather than create an independently coexisting
+integration. Its migration from minor version 3 to 4 removes an incompatible
+old token and forces Samsung-account reauthentication. The existing entry,
+devices, and entity registry therefore need to be treated as migration state,
+not as a parallel installation.
+
 ## Objective
 
 Validate `smartthings-evo` in Robert's Home Assistant environment while
@@ -118,10 +146,14 @@ Initial recommendation:
 - Prefer an installation method that preserves a clear rollback path.
 - Do not delete or overwrite an existing custom component without first
   identifying and preserving it.
-- Do not remove the existing built-in SmartThings config entry during the first
-  test.
-- If domain collision prevents coexistence, stop and review the least
-  disruptive migration approach before proceeding.
+- Preserve the existing SmartThings config entry and registry state. Do not
+  delete and recreate the entry for the first test.
+- Expect the existing version 3/minor 3 entry to migrate to minor version 4 and
+  require Samsung-account reauthentication when the custom component loads.
+- Establish whether restoring the Home Assistant backup is sufficient to
+  reverse the config-entry migration, and preserve a copy of the pre-test
+  custom-component state if one exists.
+- Treat the domain collision as a replacement/migration test, not coexistence.
 
 ## Phase D: Home Assistant load test
 
@@ -276,11 +308,13 @@ Unsafe evidence:
 
 ## Immediate approval boundary
 
-The next proposed action is Phase A only:
+Phase A is complete. The next proposed action is the non-mutating portion of
+Phase B/C:
 
-> Connect to the identified Home Assistant management/API surface and perform
-> read-only checks for installation type, Core version, HACS availability, and
-> existing SmartThings integration state.
+> Inspect the Home Assistant custom-component directory, HACS repository state,
+> and supported backup/restore commands; resolve the exact source, destination,
+> migration behavior, and rollback procedure.
 
-No installation, file copy, reload, restart, browser-extension change, Samsung
-login, or token access is included in that action.
+No backup creation, installation, file copy, reload, restart,
+browser-extension change, Samsung login, or token access is included in that
+inspection. Those mutations remain separate approval boundaries.
