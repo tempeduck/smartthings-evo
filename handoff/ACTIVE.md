@@ -93,6 +93,14 @@ The reviewed live-system preflight and rollback plan is in
   3/minor version 3. Installing this same-domain custom integration will replace
   the code loading that entry; its minor-version-4 migration deliberately drops
   the incompatible old token and forces Samsung-account reauthentication.
+- Production pre-install backup was completed on 2026-08-03 and verified as a
+  protected, compressed partial backup containing Home Assistant configuration.
+- Production installation step 2 is complete: 31 reviewed integration files
+  from local commit `f649906` were staged and atomically installed at
+  `/config/custom_components/smartthings`. The remote combined file digest
+  matches the local source and the installed manifest version is `2026.7.1`.
+  Home Assistant has not yet been restarted, so the custom code and entry
+  migration are not active.
 
 ## Open work
 
@@ -100,8 +108,8 @@ The reviewed live-system preflight and rollback plan is in
    compatibility work identify high-value cases.
 2. Continue longer-running polling stability observation in the disposable
    instance.
-3. Review and approve backup creation and the exact installation/migration
-   actions before changing the live Home Assistant instance.
+3. Approve and perform one production Home Assistant restart, verify the entry
+   migration, and complete Samsung reauthentication in Robert's Chrome browser.
 4. Exercise automatic authentication and capture sanitized failure details if
    the known callback-tab HTTP 500 appears.
 
