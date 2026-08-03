@@ -1,7 +1,8 @@
 # Home Assistant Live Test Preflight and Rollback Plan
 
 Date prepared: 2026-07-30
-Status: Prepared only; no live-system action has been taken.
+Status: Production installation and manual reauthentication completed
+successfully on 2026-08-03.
 
 ## Phase A findings
 

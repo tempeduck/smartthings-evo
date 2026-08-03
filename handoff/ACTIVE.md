@@ -99,8 +99,19 @@ The reviewed live-system preflight and rollback plan is in
   from local commit `f649906` were staged and atomically installed at
   `/config/custom_components/smartthings`. The remote combined file digest
   matches the local source and the installed manifest version is `2026.7.1`.
-  Home Assistant has not yet been restarted, so the custom code and entry
-  migration are not active.
+  At the end of installation step 2, Home Assistant had not yet been restarted;
+  the subsequent restart and migration results are recorded below.
+- Production restart, migration, and Samsung reauthentication completed
+  successfully on 2026-08-03. Home Assistant remained healthy; the existing
+  `Home` entry migrated to version 3/minor version 4, removed the legacy token
+  and subscription data, accepted the Samsung-account token shape, and returned
+  to `loaded` after manual extension-assisted reauthentication.
+- Production retained all 69 enabled entities across the same eight platforms
+  seen in the disposable test, with no duplicate or disabled SmartThings
+  entities. No SmartThings authentication, setup, connection, command, or
+  rate-limit errors were observed. The only integration warnings are the same
+  nonfatal unknown private Samsung capability names seen during disposable
+  validation.
 
 ## Open work
 
@@ -108,9 +119,10 @@ The reviewed live-system preflight and rollback plan is in
    compatibility work identify high-value cases.
 2. Continue longer-running polling stability observation in the disposable
    instance.
-3. Approve and perform one production Home Assistant restart, verify the entry
-   migration, and complete Samsung reauthentication in Robert's Chrome browser.
-4. Exercise automatic authentication and capture sanitized failure details if
+3. Monitor production polling stability and API/rate-limit behavior over the
+   next several days.
+4. Exercise automatic authentication in the disposable environment and capture
+   sanitized failure details if
    the known callback-tab HTTP 500 appears.
 
 ## Risks
@@ -125,7 +137,8 @@ The reviewed live-system preflight and rollback plan is in
   environment. Multi-day stability remains unverified.
 - Installation will migrate the existing same-domain built-in SmartThings entry
   and force reauthentication; it is not an independent coexistence test.
-- Production installation and authentication have not been performed.
+- Production installation and manual Samsung authentication are complete;
+  automatic authentication remains unverified.
 - The disposable container is temporary and exposed to the home LAN. Remove the
   `smartthings-evo-ha-20260730` container and its explicit `/tmp` directory when
   testing is complete.
