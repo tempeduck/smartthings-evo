@@ -19,6 +19,13 @@ Read-only discovery completed on 2026-07-30:
 - Existing entry version: 3, minor version 3
 - Available backup: protected and compressed automatic partial backup created
   on 2026-07-30; its content includes Home Assistant configuration
+- Existing `/config/custom_components` directory: present
+- Existing `/config/custom_components/smartthings` override: absent
+- HACS: no `smartthings-evo` or equivalent SmartThings integration repository
+  is registered or installed
+- HAOS backup creation command is available through `ha backups new`; restore
+  is available through `ha backups restore <slug> --homeassistant`, with a
+  password argument when required by the selected backup
 
 Phase A result: version and backup prerequisites pass, but installation is
 currently a **no-go without an explicit migration/rollback review**.
@@ -30,6 +37,14 @@ integration. Its migration from minor version 3 to 4 removes an incompatible
 old token and forces Samsung-account reauthentication. The existing entry,
 devices, and entity registry therefore need to be treated as migration state,
 not as a parallel installation.
+
+The filesystem/HACS inspection found no pre-existing custom override to
+preserve. The proposed installation target is therefore a new
+`/config/custom_components/smartthings` directory sourced from the reviewed
+local commit, followed by one supported Home Assistant restart. Rollback is to
+remove only that newly added directory and restore the pre-install Home
+Assistant backup if the config-entry migration or registry changes must be
+reversed.
 
 ## Objective
 
@@ -309,7 +324,7 @@ Unsafe evidence:
 ## Immediate approval boundary
 
 Phase A is complete. The next proposed action is the non-mutating portion of
-Phase B/C:
+Phase B/C, which is now complete:
 
 > Inspect the Home Assistant custom-component directory, HACS repository state,
 > and supported backup/restore commands; resolve the exact source, destination,
@@ -318,3 +333,17 @@ Phase B/C:
 No backup creation, installation, file copy, reload, restart,
 browser-extension change, Samsung login, or token access is included in that
 inspection. Those mutations remain separate approval boundaries.
+
+The next mutation requiring approval is:
+
+1. Create and verify a fresh pre-install HAOS backup.
+2. Copy the reviewed local `custom_components/smartthings` directory to the
+   previously absent production target.
+3. Restart Home Assistant once through its supported HAOS command.
+4. Confirm the existing entry migrates to minor version 4 and requests
+   reauthentication.
+5. Complete Samsung reauthentication in Robert's browser.
+
+If startup or migration fails, remove only the new custom-component directory;
+restore the fresh backup when reverting config-entry or registry state is
+necessary.

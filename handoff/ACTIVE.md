@@ -81,6 +81,11 @@ The reviewed live-system preflight and rollback plan is in
 - Disposable container restart persistence passed: Home Assistant returned to
   `RUNNING`, the stored Samsung-authenticated SmartThings entry loaded without
   reauthentication, and all 69 registered entities remained present.
+- Forced token-refresh validation passed in the disposable instance: after
+  changing only the stored access-token expiry timestamp to expired and
+  restarting, both access and refresh tokens rotated, a fresh approximately
+  24-hour access lifetime was persisted, and the entry loaded without 2FA or
+  interactive reauthentication. Token values were not output or recorded.
 - Phase A live-system discovery was completed read-only on 2026-07-30:
   Home Assistant OS is running Core `2026.7.4`, HACS is loaded, and a protected
   automatic backup includes Home Assistant configuration.
@@ -93,14 +98,11 @@ The reviewed live-system preflight and rollback plan is in
 
 1. Add deeper setup-entry and platform-specific entity tests as defects or
    compatibility work identify high-value cases.
-2. Validate access-token refresh and longer-running polling stability in the
-   disposable instance.
-3. Complete the read-only Phase B/C inspection in
-   `handoff/LIVE_INSTALL_PLAN.md` to resolve the custom-component/HACS state and
-   exact restore procedure.
-4. Review and approve backup creation and the exact installation/migration
+2. Continue longer-running polling stability observation in the disposable
+   instance.
+3. Review and approve backup creation and the exact installation/migration
    actions before changing the live Home Assistant instance.
-5. Exercise automatic authentication and capture sanitized failure details if
+4. Exercise automatic authentication and capture sanitized failure details if
    the known callback-tab HTTP 500 appears.
 
 ## Risks
@@ -110,9 +112,9 @@ The reviewed live-system preflight and rollback plan is in
   file, issues, commits, or chat.
 - Polling replaces push updates, and button events are not available through
   the polling path.
-- Manual authentication, discovery, commands, polling, config-entry reload, and
-  restart persistence are verified in the disposable environment. Token
-  refresh and multi-day stability remain unverified.
+- Manual authentication, discovery, commands, polling, config-entry reload,
+  restart persistence, and forced token refresh are verified in the disposable
+  environment. Multi-day stability remains unverified.
 - Installation will migrate the existing same-domain built-in SmartThings entry
   and force reauthentication; it is not an independent coexistence test.
 - Production installation and authentication have not been performed.
