@@ -12,8 +12,8 @@ The reviewed live-system preflight and rollback plan is in
 - Cloned the fork at `~/projects/smartthings-evo`.
 - `origin` points to the personal fork and `upstream` points to the original.
 - Local `main` matches upstream commit `16548af` before workspace scaffolding.
-- Added workspace guidance and project context; nothing has been committed or
-  pushed.
+- Added workspace guidance, project context, tests, and validation handoffs.
+  Local changes have been committed but not pushed.
 - Completed the initial non-live automated test foundation. The repository now
   has isolated pytest coverage for Samsung authentication/token management,
   configuration-flow state transitions, REST polling, and base entity update
@@ -41,11 +41,11 @@ The reviewed live-system preflight and rollback plan is in
 - The isolated unit suite passes: 32 tests.
 - The HACS GitHub Action has not been run against the unpushed local
   scaffolding.
-- No Home Assistant installation, Samsung login, browser-extension load, or
-  live Samsung API test has been performed.
+- Disposable end-to-end validation has now exercised a real Samsung login and
+  live SmartThings API access without changing production Home Assistant.
 - A disposable Home Assistant Core `2026.7.4` container is running on the
-  development VM as `smartthings-evo-ha-20260730`, bound only to
-  `127.0.0.1:18123`. Its isolated configuration is under
+  development VM as `smartthings-evo-ha-20260730`, bound to the development
+  VM's LAN address at `10.10.1.19:18123`. Its isolated configuration is under
   `/tmp/smartthings-evo-ha-20260730/config`; it contains a copy of the current
   custom integration and no production config, tokens, entries, or devices.
 - The disposable instance reached onboarding and recognized the custom
@@ -61,6 +61,26 @@ The reviewed live-system preflight and rollback plan is in
   synthetic incompatible legacy token was removed, and Home Assistant moved
   the entry to an authentication-required setup error. No production entry or
   token was copied.
+- Disposable end-to-end manual authentication passed on 2026-08-03 using
+  Chrome with the unpacked extension: Samsung login, callback capture, manual
+  callback submission, token exchange, config-entry creation, and location and
+  device discovery all succeeded. Callback and token values were never placed
+  in the repository or chat.
+- The disposable SmartThings entry loaded successfully and registered 69
+  enabled entities across binary sensor, button, light, media player, number,
+  select, sensor, and switch platforms. The expected devices were present.
+- Inbound REST polling was demonstrated by turning on a low-risk oven light in
+  SmartThings and observing Home Assistant update to `on` within the polling
+  path. Outbound command execution was demonstrated by turning the same light
+  off in Home Assistant and confirming it turned off physically.
+- No authentication, command, connection, polling, or rate-limit errors were
+  logged. `pysmartthings` emitted nonfatal warnings for several unknown private
+  Samsung capability names.
+- Disposable config-entry reload passed without requiring a Home Assistant
+  restart. The entry returned to `loaded` with no integration errors.
+- Disposable container restart persistence passed: Home Assistant returned to
+  `RUNNING`, the stored Samsung-authenticated SmartThings entry loaded without
+  reauthentication, and all 69 registered entities remained present.
 - Phase A live-system discovery was completed read-only on 2026-07-30:
   Home Assistant OS is running Core `2026.7.4`, HACS is loaded, and a protected
   automatic backup includes Home Assistant configuration.
@@ -73,16 +93,14 @@ The reviewed live-system preflight and rollback plan is in
 
 1. Add deeper setup-entry and platform-specific entity tests as defects or
    compatibility work identify high-value cases.
-2. Continue disposable-instance testing with the browser-extension and manual
-   Samsung authentication only after reviewing how the browser will safely
-   reach the localhost-bound instance.
+2. Validate access-token refresh and longer-running polling stability in the
+   disposable instance.
 3. Complete the read-only Phase B/C inspection in
    `handoff/LIVE_INSTALL_PLAN.md` to resolve the custom-component/HACS state and
    exact restore procedure.
 4. Review and approve backup creation and the exact installation/migration
    actions before changing the live Home Assistant instance.
-5. Load the unpacked extension and test manual authentication first.
-6. Exercise automatic authentication and capture sanitized failure details if
+5. Exercise automatic authentication and capture sanitized failure details if
    the known callback-tab HTTP 500 appears.
 
 ## Risks
@@ -92,13 +110,12 @@ The reviewed live-system preflight and rollback plan is in
   file, issues, commits, or chat.
 - Polling replaces push updates, and button events are not available through
   the polling path.
-- Static and CI validation do not establish end-to-end functionality; current
-  operational readiness remains unverified until authentication, initial
-  discovery, commands, polling, token refresh, reload, and restart persistence
-  are exercised in Home Assistant.
+- Manual authentication, discovery, commands, polling, config-entry reload, and
+  restart persistence are verified in the disposable environment. Token
+  refresh and multi-day stability remain unverified.
 - Installation will migrate the existing same-domain built-in SmartThings entry
   and force reauthentication; it is not an independent coexistence test.
-- Live installation and authentication have not yet been validated.
-- The disposable container is temporary and bound to localhost. Remove the
+- Production installation and authentication have not been performed.
+- The disposable container is temporary and exposed to the home LAN. Remove the
   `smartthings-evo-ha-20260730` container and its explicit `/tmp` directory when
   testing is complete.
