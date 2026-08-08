@@ -35,6 +35,11 @@ In the SmartThings flow the callback `code`, `state`, and `*_server_url` are
 3. Click **Load unpacked** and select this `chrome-extension/` folder.
 4. The SmartThings OAuth Helper icon appears in the toolbar.
 
+After updating the repository, return to the extensions page and click
+**Reload** for the unpacked extension. Verify that the extension has permissions
+for `account.samsung.com` and `ha-sasdk.example.com` before starting a new HA
+flow.
+
 ## Usage
 
 ### Automatic (paste-free) — with the Home Assistant integration ✅ working
@@ -103,6 +108,15 @@ return to the copy/paste page.
 - `icon16/48/128.svg` — toolbar icons.
 
 ## Troubleshooting
+
+- **The flow never starts:** confirm Home Assistant Cloud is enabled and that
+  the integration is using the automatic extension method. Reload the unpacked
+  extension after every source update.
+- **The entry is created but devices do not change:** this integration polls
+  REST status every 30 seconds; it does not receive the official push events.
+- **A callback was exposed in a log or screenshot:** revoke the affected
+  Samsung/SmartThings session and remove the artifact. Callback URLs and tokens
+  are secrets.
 
 - **Dead 500 tab after automatic sign-in:** known cosmetic issue (see above) —
   authentication still completes in the original HA window; close the tab.

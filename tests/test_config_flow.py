@@ -62,12 +62,14 @@ class FakeConfigFlow:
         self.unique_id = unique_id
 
     def _abort_if_unique_id_configured(self):
+        self.unique_id_configured_called = True
         return None
 
     def async_create_entry(self, *, title, data):
         return {"type": "create_entry", "title": title, "data": data}
 
     def _abort_if_unique_id_mismatch(self, *, reason):
+        self.unique_id_mismatch_reason = reason
         return None
 
     def _get_reauth_entry(self):
@@ -371,6 +373,41 @@ async def test_finish_aborts_on_smartthings_connection_error(
 
 
 @pytest.mark.asyncio
+async def test_finish_checks_for_duplicate_config_entry(config_flow_module, monkeypatch):
+    location = SimpleNamespace(location_id="location-1", name="Home")
+    client = SimpleNamespace(
+        authenticate=lambda token: None,
+        get_locations=AsyncMock(return_value=[location]),
+    )
+    monkeypatch.setattr(config_flow_module, "SmartThings", lambda session: client)
+    flow = _flow(config_flow_module)
+    flow._auth = SimpleNamespace(osp_host="regional.example")
+
+    result = await flow._async_finish({"access_token": "redacted"})
+
+    assert result["type"] == "create_entry"
+    assert flow.unique_id_configured_called is True
+
+
+@pytest.mark.asyncio
+async def test_finish_checks_reauth_account_mismatch(config_flow_module, monkeypatch):
+    location = SimpleNamespace(location_id="location-1", name="Home")
+    client = SimpleNamespace(
+        authenticate=lambda token: None,
+        get_locations=AsyncMock(return_value=[location]),
+    )
+    monkeypatch.setattr(config_flow_module, "SmartThings", lambda session: client)
+    flow = _flow(config_flow_module)
+    flow.source = config_flow_module.SOURCE_REAUTH
+    flow._auth = SimpleNamespace(osp_host="regional.example")
+
+    result = await flow._async_finish({"access_token": "redacted"})
+
+    assert result["type"] == "reauth"
+    assert flow.unique_id_mismatch_reason == "reauth_account_mismatch"
+
+
+@pytest.mark.asyncio
 async def test_finish_updates_existing_entry_during_reauth(
     config_flow_module, monkeypatch
 ):
@@ -404,3 +441,50 @@ async def test_reauth_confirmation_returns_to_method_picker(config_flow_module):
         "step_id": "pick_method",
         "menu_options": ["auth_extension", "auth_manual"],
     }
+
+
+@pytest.mark.asyncio
+async def test_reauth_step_shows_confirmation_form(config_flow_module):
+    flow = _flow(config_flow_module)
+
+    result = await flow.async_step_reauth({"access_token": "redacted"})
+
+    assert result == {
+        "type": "form",
+        "step_id": "reauth_confirm",
+        "data_schema": None,
+        "description_placeholders": None,
+        "errors": {},
+    }
+
+
+@pytest.mark.asyncio
+async def test_token_refresh_persists_new_token(config_flow_module, monkeypatch):
+    auth = config_flow_module.samsung_auth
+    update_token = AsyncMock()
+    manager = auth.SamsungTokenManager(
+        object(),
+        {
+            "access_token": "expired",
+            "refresh_token": "old-refresh",
+            "expires_at": 0,
+        },
+        update_token,
+    )
+    monkeypatch.setattr(
+        auth,
+        "refresh_token",
+        AsyncMock(
+            return_value={
+                "access_token": "new-access",
+                "refresh_token": "new-refresh",
+                "expires_in": 3600,
+            }
+        ),
+    )
+
+    result = await manager.async_ensure_valid_token()
+
+    assert result == "new-access"
+    update_token.assert_awaited_once()
+    assert update_token.await_args.args[0]["refresh_token"] == "new-refresh"
