@@ -22,6 +22,10 @@ The reviewed live-system preflight and rollback plan is in
   and token refreshes are serialized to prevent duplicate concurrent refresh
   requests.
 
+The validated `test/config-flow-clean` branch has now been merged into local
+`main`. Its expanded regression suite passes with 33 tests, and Robert reports
+that the deployed production integration is operating without issues.
+
 ## Validation
 
 - Python compilation completed successfully with `python3 -m compileall`.

@@ -8,12 +8,11 @@ of a full Home Assistant installation.
 from __future__ import annotations
 
 import importlib.util
-from pathlib import Path
 import sys
+from pathlib import Path
 from types import ModuleType
 
 import pytest
-
 
 PROJECT_ROOT = Path(__file__).parents[1]
 COMPONENT_ROOT = PROJECT_ROOT / "custom_components" / "smartthings"
