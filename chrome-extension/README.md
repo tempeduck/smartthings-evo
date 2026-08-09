@@ -64,9 +64,8 @@ and returned encrypted, so it can't carry HA's routing JWT. The sentinel is how 
 
 > ⚠️ **Known issue (cosmetic, tabled):** the `/auth/external/callback` tab may show an
 > HTTP 500 and be left open as a dead tab **even though authentication completes** in the
-> original HA window. Safe to close it. Root cause is at HA's OAuth callback-view layer (not
-> the exchange, which succeeds) — full analysis and fix direction in
-> [`resources/oauth-callback-500-analysis.md`](../resources/oauth-callback-500-analysis.md).
+> original HA window. Safe to close it. Root cause is at HA's OAuth callback-view layer; the
+> token exchange and config-entry creation can still succeed in the original HA window.
 
 ### Default: copy/paste (always works)
 
