@@ -39,6 +39,8 @@ OLD_DATA = "old_data"
 
 # REST polling (the Samsung-account/OSP token has no sse/installed_app_id for realtime push).
 DEFAULT_SCAN_INTERVAL = 30
+# Device health changes less frequently than device state; avoid querying it every poll.
+HEALTH_SCAN_INTERVAL = 300
 # Dispatcher signal fired by the coordinator after each poll, formatted with the device id.
 SIGNAL_SMARTTHINGS_UPDATE = "smartthings_update_{}"
 

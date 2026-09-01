@@ -2,7 +2,10 @@
 SmartThings is 'evolving' their developer API by charging for access starting in October. smartthings-evo is a copy of the ha-core smartthings component, refactored to mirror the authentication flow of the android mobile app, requiring a browser extension to capture the sasdk:// redirect uri and finish authorization.
 
 ## Push vs Polling
-This login method can't subscribe to push updates, so the integration now polls the REST api every 30s.
+This login method can't subscribe to push updates, so the integration polls
+device state over the REST API every 30 seconds. Device connectivity health is
+checked every 5 minutes to reduce API traffic. Button presses and other
+momentary events that require push subscriptions are unavailable.
 
 # Authentication
 

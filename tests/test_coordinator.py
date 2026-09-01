@@ -87,6 +87,7 @@ def coordinator_module(monkeypatch):
     constants = ModuleType(f"{PACKAGE}.const")
     constants.DEFAULT_SCAN_INTERVAL = 30
     constants.DOMAIN = "smartthings"
+    constants.HEALTH_SCAN_INTERVAL = 300
     constants.MAIN = "main"
     constants.SIGNAL_SMARTTHINGS_UPDATE = "smartthings_update_{}"
     monkeypatch.setitem(sys.modules, f"{PACKAGE}.const", constants)
@@ -102,7 +103,7 @@ def _device(device_id, *, category=None):
 
 
 @pytest.mark.asyncio
-async def test_poll_updates_status_health_and_dispatches(coordinator_module):
+async def test_poll_updates_status_health_and_dispatches(coordinator_module, caplog):
     client = SimpleNamespace(
         get_device_status=AsyncMock(return_value={"raw": "status"}),
         get_device_health=AsyncMock(
@@ -115,7 +116,8 @@ async def test_poll_updates_status_health_and_dispatches(coordinator_module):
         object(), object(), client, {"device-1": full}, process_status
     )
 
-    result = await coordinator._async_update_data()
+    with caplog.at_level("DEBUG", logger=coordinator_module._LOGGER.name):
+        result = await coordinator._async_update_data()
 
     assert result == {"device-1": full}
     assert full.status == {"processed": {"raw": "status"}}
@@ -123,6 +125,8 @@ async def test_poll_updates_status_health_and_dispatches(coordinator_module):
     client.get_device_status.assert_awaited_once_with("device-1")
     client.get_device_health.assert_awaited_once_with("device-1")
     assert coordinator_module._test_signals == ["smartthings_update_device-1"]
+    assert "1 device(s), 2 request(s)" in caplog.text
+    assert "0 failed device(s)" in caplog.text
 
 
 @pytest.mark.asyncio
@@ -144,7 +148,27 @@ async def test_poll_marks_offline_device_unavailable(coordinator_module):
 
 
 @pytest.mark.asyncio
-async def test_tracker_skips_unsupported_status_requests(coordinator_module):
+async def test_health_is_not_requested_on_every_poll(coordinator_module):
+    client = SimpleNamespace(
+        get_device_status=AsyncMock(return_value={"raw": "status"}),
+        get_device_health=AsyncMock(
+            return_value=SimpleNamespace(state=HealthStatus.ONLINE)
+        ),
+    )
+    full = FakeFullDevice(_device("device-1"), {}, False)
+    coordinator = coordinator_module.SmartThingsCoordinator(
+        object(), object(), client, {"device-1": full}, lambda value: value
+    )
+
+    await coordinator._async_update_data()
+    await coordinator._async_update_data()
+
+    assert client.get_device_status.await_count == 2
+    client.get_device_health.assert_awaited_once_with("device-1")
+
+
+@pytest.mark.asyncio
+async def test_tracker_skips_unsupported_status_requests(coordinator_module, caplog):
     client = SimpleNamespace(
         get_device_status=AsyncMock(),
         get_device_health=AsyncMock(),
@@ -156,16 +180,21 @@ async def test_tracker_skips_unsupported_status_requests(coordinator_module):
         object(), object(), client, {"tracker-1": full}, lambda value: value
     )
 
-    await coordinator._async_update_data()
+    with caplog.at_level("DEBUG", logger=coordinator_module._LOGGER.name):
+        await coordinator._async_update_data()
 
     assert full.online is True
     client.get_device_status.assert_not_awaited()
     client.get_device_health.assert_not_awaited()
     assert coordinator_module._test_signals == ["smartthings_update_tracker-1"]
+    assert "0 request(s)" in caplog.text
+    assert "1 tracker(s) skipped" in caplog.text
 
 
 @pytest.mark.asyncio
-async def test_authentication_failure_requests_reauthentication(coordinator_module):
+async def test_authentication_failure_requests_reauthentication(
+    coordinator_module, caplog
+):
     client = SimpleNamespace(
         get_device_status=AsyncMock(
             side_effect=SmartThingsAuthenticationFailedError("expired")
@@ -180,14 +209,17 @@ async def test_authentication_failure_requests_reauthentication(coordinator_modu
         lambda value: value,
     )
 
-    with pytest.raises(ConfigEntryAuthFailed):
-        await coordinator._async_update_data()
+    with caplog.at_level("DEBUG", logger=coordinator_module._LOGGER.name):
+        with pytest.raises(ConfigEntryAuthFailed):
+            await coordinator._async_update_data()
 
     assert coordinator_module._test_signals == []
+    assert "1 request(s)" in caplog.text
+    assert "1 failed device(s)" in caplog.text
 
 
 @pytest.mark.asyncio
-async def test_connection_failure_becomes_update_failed(coordinator_module):
+async def test_connection_failure_becomes_update_failed(coordinator_module, caplog):
     client = SimpleNamespace(
         get_device_status=AsyncMock(side_effect=SmartThingsConnectionError("offline")),
         get_device_health=AsyncMock(),
@@ -200,7 +232,10 @@ async def test_connection_failure_becomes_update_failed(coordinator_module):
         lambda value: value,
     )
 
-    with pytest.raises(UpdateFailed):
-        await coordinator._async_update_data()
+    with caplog.at_level("DEBUG", logger=coordinator_module._LOGGER.name):
+        with pytest.raises(UpdateFailed):
+            await coordinator._async_update_data()
 
     assert coordinator_module._test_signals == []
+    assert "1 request(s)" in caplog.text
+    assert "1 failed device(s)" in caplog.text
