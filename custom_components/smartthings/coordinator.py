@@ -95,9 +95,10 @@ class SmartThingsCoordinator(DataUpdateCoordinator[dict[str, "FullDevice"]]):
                             await self.client.get_device_status(device_id)
                         )
                         now = time.monotonic()
+                        last_health_check = self._last_health_check.get(device_id)
                         if (
-                            now - self._last_health_check.get(device_id, 0)
-                            >= HEALTH_SCAN_INTERVAL
+                            last_health_check is None
+                            or now - last_health_check >= HEALTH_SCAN_INTERVAL
                         ):
                             requests += 1
                             health = await self.client.get_device_health(device_id)
