@@ -65,6 +65,10 @@ def entity_module(monkeypatch):
         return lambda: connected.pop(signal, None)
 
     dispatcher.async_dispatcher_connect = connect
+    sent = []
+    dispatcher.async_dispatcher_send = lambda hass, signal, *args: sent.append(
+        (signal, args)
+    )
     entity = ModuleType("homeassistant.helpers.entity")
     entity.Entity = FakeEntity
 
@@ -84,11 +88,13 @@ def entity_module(monkeypatch):
     constants = ModuleType(f"{PACKAGE}.const")
     constants.DOMAIN = "smartthings"
     constants.MAIN = "main"
+    constants.SIGNAL_SMARTTHINGS_COMMAND = "smartthings_command"
     constants.SIGNAL_SMARTTHINGS_UPDATE = "smartthings_update_{}"
     monkeypatch.setitem(sys.modules, f"{PACKAGE}.const", constants)
 
     module = load_component_module("entity")
     module._test_connected = connected
+    module._test_sent = sent
     return module
 
 
@@ -143,6 +149,7 @@ async def test_entity_executes_command_for_its_component(entity_module):
     entity = entity_module.SmartThingsEntity(
         client, full, {Capability.SWITCH}, component="main"
     )
+    entity.hass = object()
 
     await entity.execute_device_command(
         Capability.SWITCH, Command.ON, argument=["value"]
@@ -155,6 +162,7 @@ async def test_entity_executes_command_for_its_component(entity_module):
         "main",
         argument=["value"],
     )
+    assert entity_module._test_sent == [("smartthings_command", ("device-1",))]
 
 
 def test_entity_availability_event_updates_state(entity_module):

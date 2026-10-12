@@ -1,0 +1,3 @@
+
+# Preserve whitespace markers in archived unified diffs.
+*.patch -whitespace

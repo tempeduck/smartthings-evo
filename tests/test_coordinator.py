@@ -48,6 +48,9 @@ class FakeDataUpdateCoordinator:
     def __class_getitem__(cls, item):
         return cls
 
+    async def async_request_refresh(self):
+        """Match the coordinator API used by command-triggered refreshes."""
+
 
 @dataclass
 class FakeFullDevice:
@@ -71,6 +74,7 @@ def coordinator_module(monkeypatch):
     helpers = ModuleType("homeassistant.helpers")
     dispatcher = ModuleType("homeassistant.helpers.dispatcher")
     dispatcher.async_dispatcher_send = lambda hass, signal: signals.append(signal)
+    dispatcher.async_dispatcher_connect = lambda hass, signal, callback: lambda: None
     update_coordinator = ModuleType("homeassistant.helpers.update_coordinator")
     update_coordinator.DataUpdateCoordinator = FakeDataUpdateCoordinator
     update_coordinator.UpdateFailed = UpdateFailed
@@ -87,8 +91,11 @@ def coordinator_module(monkeypatch):
     constants = ModuleType(f"{PACKAGE}.const")
     constants.DEFAULT_SCAN_INTERVAL = 30
     constants.DOMAIN = "smartthings"
+    constants.FAST_POLL_DURATION = 30
+    constants.FAST_POLL_INTERVAL = 5
     constants.HEALTH_SCAN_INTERVAL = 300
     constants.MAIN = "main"
+    constants.SIGNAL_SMARTTHINGS_COMMAND = "smartthings_command"
     constants.SIGNAL_SMARTTHINGS_UPDATE = "smartthings_update_{}"
     monkeypatch.setitem(sys.modules, f"{PACKAGE}.const", constants)
 
@@ -165,6 +172,38 @@ async def test_health_is_not_requested_on_every_poll(coordinator_module):
 
     assert client.get_device_status.await_count == 2
     client.get_device_health.assert_awaited_once_with("device-1")
+
+
+@pytest.mark.asyncio
+async def test_successful_command_starts_targeted_fast_polling(coordinator_module):
+    client = SimpleNamespace(
+        get_device_status=AsyncMock(return_value={"raw": "status"}),
+        get_device_health=AsyncMock(
+            return_value=SimpleNamespace(state=HealthStatus.ONLINE)
+        ),
+    )
+    scheduled = []
+    hass = SimpleNamespace(async_create_task=lambda task: scheduled.append(task))
+    first = FakeFullDevice(_device("device-1"), {}, False)
+    second = FakeFullDevice(_device("device-2"), {}, False)
+    coordinator = coordinator_module.SmartThingsCoordinator(
+        hass,
+        object(),
+        client,
+        {"device-1": first, "device-2": second},
+        lambda value: value,
+    )
+
+    coordinator.async_handle_device_command("device-1")
+
+    assert coordinator.update_interval.total_seconds() == 5
+    assert coordinator._fast_poll_device_ids == {"device-1"}
+    assert len(scheduled) == 1
+    scheduled[0].close()
+
+    await coordinator._async_update_data()
+
+    client.get_device_status.assert_awaited_once_with("device-1")
 
 
 @pytest.mark.asyncio

@@ -145,6 +145,19 @@ STICK_CLEANER_STATUS = {
 WASHER_OPTIONS = ["pause", "run", "stop"]
 
 
+def washer_completion_time(value: str | None) -> datetime | None:
+    """Return a future washer completion time, if one is still available.
+
+    Samsung retains the last predicted completion timestamp after a cycle has
+    finished. A timestamp sensor renders that stale value as elapsed time,
+    which looks like a counter that starts increasing after the washer stops.
+    """
+    completion_time = dt_util.parse_datetime(value) if value else None
+    if completion_time and completion_time > dt_util.utcnow():
+        return completion_time
+    return None
+
+
 def power_attributes(status: dict[str, Any]) -> dict[str, Any]:
     """Return the power attributes."""
     state = {}
@@ -1197,7 +1210,7 @@ CAPABILITY_TO_SENSORS: dict[
                 key=Attribute.COMPLETION_TIME,
                 translation_key="completion_time",
                 device_class=SensorDeviceClass.TIMESTAMP,
-                value_fn=lambda value: dt_util.parse_datetime(value) if value else None,
+                value_fn=washer_completion_time,
                 component_fn=lambda component: component == "sub",
                 component_translation_key={
                     "sub": "washer_sub_completion_time",

@@ -15,11 +15,19 @@ from pysmartthings.models import HealthStatus
 
 from homeassistant.core import callback
 from homeassistant.helpers.device_registry import DeviceInfo
-from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers.dispatcher import (
+    async_dispatcher_connect,
+    async_dispatcher_send,
+)
 from homeassistant.helpers.entity import Entity
 
 from . import FullDevice
-from .const import DOMAIN, MAIN, SIGNAL_SMARTTHINGS_UPDATE
+from .const import (
+    DOMAIN,
+    MAIN,
+    SIGNAL_SMARTTHINGS_COMMAND,
+    SIGNAL_SMARTTHINGS_UPDATE,
+)
 
 
 class SmartThingsEntity(Entity):
@@ -117,4 +125,7 @@ class SmartThingsEntity(Entity):
             kwargs["argument"] = argument
         await self.client.execute_device_command(
             self.device.device.device_id, capability, command, self.component, **kwargs
+        )
+        async_dispatcher_send(
+            self.hass, SIGNAL_SMARTTHINGS_COMMAND, self.device.device.device_id
         )

@@ -39,10 +39,17 @@ OLD_DATA = "old_data"
 
 # REST polling (the Samsung-account/OSP token has no sse/installed_app_id for realtime push).
 DEFAULT_SCAN_INTERVAL = 30
+# Poll a device briefly after Home Assistant has successfully sent it a command. This narrows
+# the usual cloud-command confirmation delay without applying the higher request rate to every
+# device in the location.
+FAST_POLL_INTERVAL = 5
+FAST_POLL_DURATION = 30
 # Device health changes less frequently than device state; avoid querying it every poll.
 HEALTH_SCAN_INTERVAL = 300
 # Dispatcher signal fired by the coordinator after each poll, formatted with the device id.
 SIGNAL_SMARTTHINGS_UPDATE = "smartthings_update_{}"
+# Dispatcher signal emitted after a successful Home Assistant device command.
+SIGNAL_SMARTTHINGS_COMMAND = "smartthings_command"
 
 CONF_SUBSCRIPTION_ID = "subscription_id"
 EVENT_BUTTON = "smartthings.button"

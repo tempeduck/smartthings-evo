@@ -11,8 +11,10 @@ SmartThings REST API.
 ## Push vs Polling
 This login method can't subscribe to push updates, so the integration polls
 device state over the REST API every 30 seconds. Device connectivity health is
-checked every 5 minutes to reduce API traffic. Button presses and other
-momentary events that require push subscriptions are unavailable.
+checked every 5 minutes to reduce API traffic. After a successful command from
+Home Assistant, only that device is polled every 5 seconds for up to 30 seconds
+to confirm the cloud state change sooner. Button presses and other momentary
+events that require push subscriptions are unavailable.
 
 ## Important limitations
 

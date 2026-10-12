@@ -26,14 +26,20 @@ from pysmartthings.models import HealthStatus
 
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
-from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.dispatcher import (
+    async_dispatcher_connect,
+    async_dispatcher_send,
+)
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
     DEFAULT_SCAN_INTERVAL,
     DOMAIN,
+    FAST_POLL_DURATION,
+    FAST_POLL_INTERVAL,
     HEALTH_SCAN_INTERVAL,
     MAIN,
+    SIGNAL_SMARTTHINGS_COMMAND,
     SIGNAL_SMARTTHINGS_UPDATE,
 )
 
@@ -66,19 +72,53 @@ class SmartThingsCoordinator(DataUpdateCoordinator[dict[str, "FullDevice"]]):
         self.devices = devices
         self._process_status = process_status
         self._last_health_check: dict[str, float] = {}
+        self._fast_poll_device_ids: set[str] = set()
+        self._fast_poll_until = 0.0
         # We already have the initial status from setup; seed it so the first scheduled poll
         # is a refresh, not a cold start.
         self.data = devices
 
+    def async_handle_device_command(self, device_id: str) -> None:
+        """Briefly poll a successfully commanded device at a faster cadence."""
+        if device_id not in self.devices:
+            return
+
+        self._fast_poll_device_ids.add(device_id)
+        self._fast_poll_until = max(
+            self._fast_poll_until, time.monotonic() + FAST_POLL_DURATION
+        )
+        self.update_interval = timedelta(seconds=FAST_POLL_INTERVAL)
+        self.hass.async_create_task(self.async_request_refresh())
+
+    def async_listen_for_commands(self) -> Callable[[], None]:
+        """Return the cleanup callback for command-triggered fast polling."""
+        return async_dispatcher_connect(
+            self.hass, SIGNAL_SMARTTHINGS_COMMAND, self.async_handle_device_command
+        )
+
     async def _async_update_data(self) -> dict[str, FullDevice]:
-        """Refresh status + health for every known device, in place."""
+        """Refresh the normal set of device status and health data in place."""
         started = time.monotonic()
         requests = 0
         failed_devices = 0
         trackers_skipped = 0
 
+        if time.monotonic() >= self._fast_poll_until:
+            self._fast_poll_device_ids.clear()
+            self.update_interval = timedelta(seconds=DEFAULT_SCAN_INTERVAL)
+
+        devices_to_poll = (
+            {
+                device_id: self.devices[device_id]
+                for device_id in self._fast_poll_device_ids
+                if device_id in self.devices
+            }
+            if self._fast_poll_device_ids
+            else self.devices
+        )
+
         try:
-            for device_id, full in self.devices.items():
+            for device_id, full in devices_to_poll.items():
                 main = full.device.components.get(MAIN)
                 is_tracker = (
                     main is not None

@@ -235,6 +235,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: SmartThingsConfigEntry) 
         rooms=rooms,
         coordinator=coordinator,
     )
+    entry.async_on_unload(coordinator.async_listen_for_commands())
 
     # Start periodic REST polling. Adding a no-op listener starts DataUpdateCoordinator's
     # scheduling without an immediate refetch (we already have fresh status from setup).
